@@ -38,6 +38,163 @@ def colocar_minas(matriz, cantidad_minas):
         if matriz[fila][columna] != -1: # si no hay minas
             matriz[fila][columna] = -1 # la colocamos
             minas_colocadas += 1 
-    return matriz 
+    return matriz
+
+"""
+    N: calcular_vecinos
+    D: calcula cuantas minas hay alrededor de cada celda
+    E: matriz con minas y ceros
+    S: misma matriz donde los ceros se convierten en números 1..8
+    R: las minas ya deben estar colocadas (-1)
+    """
+
+def calcular_vecinos(tablero_con_minas):
+    
+    tamaño = len(tablero_con_minas)
+    
+    for fila in range(tamaño):
+        for columna in range(tamaño):
+            
+            # si es mina, la saltamos
+            if tablero_con_minas[fila][columna] == -1:
+                continue
+            
+            # contador de minas alrededor
+            contador = 0
+            
+            # REVISAR CADA UNO DE LOS 8 VECINOS
+            
+            # vecino arriba-izquierda
+            if fila - 1 >= 0 and columna - 1 >= 0:
+                if tablero_con_minas[fila - 1][columna - 1] == -1:
+                    contador = contador + 1
+            
+            # vecino arriba
+            if fila - 1 >= 0:
+                if tablero_con_minas[fila - 1][columna] == -1:
+                    contador = contador + 1
+            
+            # vecino arriba-derecha
+            if fila - 1 >= 0 and columna + 1 < tamaño:
+                if tablero_con_minas[fila - 1][columna + 1] == -1:
+                    contador = contador + 1
+            
+            # vecino izquierda
+            if columna - 1 >= 0:
+                if tablero_con_minas[fila][columna - 1] == -1:
+                    contador = contador + 1
+            
+            # vecino derecha
+            if columna + 1 < tamaño:
+                if tablero_con_minas[fila][columna + 1] == -1:
+                    contador = contador + 1
+            
+            # vecino abajo-izquierda
+            if fila + 1 < tamaño and columna - 1 >= 0:
+                if tablero_con_minas[fila + 1][columna - 1] == -1:
+                    contador = contador + 1
+            
+            # vecino abajo
+            if fila + 1 < tamaño:
+                if tablero_con_minas[fila + 1][columna] == -1:
+                    contador = contador + 1
+            
+            # vecino abajo-derecha
+            if fila + 1 < tamaño and columna + 1 < tamaño:
+                if tablero_con_minas[fila + 1][columna + 1] == -1:
+                    contador = contador + 1
+            
+            # guardar el resultado en la celda
+            if contador > 0:
+                tablero_con_minas[fila][columna] = contador
+    
+    return tablero_con_minas
+
+"""
+N: inicializar_tablero_completo
+D: crea y devuelve el tablero logico completo (minas y numeros)
+E: n, cantidad de minas
+S: matriz n x n lista para jugar
+R: total_minas debe ser menor a n*n
+"""
+def inicializar_tablero_completo(n, total_minas):
+    tablero = crear_matriz_vacia(n)
+    tablero = colocar_minas(tablero, total_minas)
+    tablero = calcular_vecinos(tablero)
+    return tablero
+
+"""
+N: inicializar_tablero_visible
+D: crea el tablero de visibilidad con todo oculto
+E: n - tamaño del tablero
+S: matriz n x n llena de 0 (todo oculto)
+R: n debe ser mayor a 0
+"""
+def inicializar_tablero_visible(n):
+    return crear_matriz_vacia(n)
 
 
+"""
+N: revelar_celda
+D: revela una celda. si es 0, revela recursivamente sus vecinos (efecto cascada)
+E: tablero_logico, tablero_visible, fila, columna
+S: True si sigue vivo, False si exploto
+R: las coordenadas deben ser validas
+"""
+def revelar_celda(tablero_logico, tablero_visible, fila, columna):
+    tamaño = len(tablero_logico)
+    
+    # validar limites del tablero
+    if fila < 0 or fila >= tamaño or columna < 0 or columna >= tamaño:
+        return True
+    
+    # si ya esta revelada o tiene bandera, no hacer nada
+    if tablero_visible[fila][columna] != 0:
+        return True
+    
+    # si es mina, game over
+    if tablero_logico[fila][columna] == -1:
+        tablero_visible[fila][columna] = 1
+        return False
+    
+    # revelar la celda actual
+    tablero_visible[fila][columna] = 1
+    
+    # si es 0 (celda vacia), revelar recursivamente los vecinos (efecto cascada)
+    if tablero_logico[fila][columna] == 0:
+        # revisar los 8 vecinos
+        
+        # arriba-izquierda
+        revelar_celda(tablero_logico, tablero_visible, fila - 1, columna - 1)
+        # arriba
+        revelar_celda(tablero_logico, tablero_visible, fila - 1, columna)
+        # arriba-derecha
+        revelar_celda(tablero_logico, tablero_visible, fila - 1, columna + 1)
+        # izquierda
+        revelar_celda(tablero_logico, tablero_visible, fila, columna - 1)
+        # derecha
+        revelar_celda(tablero_logico, tablero_visible, fila, columna + 1)
+        # abajo-izquierda
+        revelar_celda(tablero_logico, tablero_visible, fila + 1, columna - 1)
+        # abajo
+        revelar_celda(tablero_logico, tablero_visible, fila + 1, columna)
+        # abajo-derecha
+        revelar_celda(tablero_logico, tablero_visible, fila + 1, columna + 1)
+    
+    return True
+
+
+"""
+N: colocar_bandera
+D: coloca o quita una bandera en una celda oculta
+E: tablero_visible, fila, columna
+S: nuevo estado de la celda (0=oculta, 2=bandera)
+R: solo se puede poner o quitar bandera si la celda esta oculta (0) o tiene bandera (2)
+"""
+def colocar_bandera(tablero_visible, fila, columna):
+    if tablero_visible[fila][columna] == 0:
+        tablero_visible[fila][columna] = 2      # poner bandera
+    elif tablero_visible[fila][columna] == 2:
+        tablero_visible[fila][columna] = 0      # quitar bandera
+    
+    return tablero_visible[fila][columna]
