@@ -3,8 +3,8 @@ import random
 """
 N: crear_matriz_vacia
 D: crea una matriz cuadrada de n x n llena de ceros
-E: n (int) - tamaño de la matriz
-S: list - matriz de n x n con todos los elementos en 0
+E: tamaño de la matriz
+S: matriz de n x n con todos los elementos en 0
 R: n debe ser mayor a 0
 """
 def crear_matriz_vacia(n):
@@ -42,7 +42,7 @@ def colocar_minas(matriz, cantidad_minas):
 
 """
     N: calcular_vecinos
-    D: calcula cuantas minas hay alrededor de cada celda
+    D: calcula cuántas minas hay alrededor de cada celda
     E: matriz con minas y ceros
     S: misma matriz donde los ceros se convierten en números 1..8
     R: las minas ya deben estar colocadas (-1)
@@ -112,7 +112,7 @@ def calcular_vecinos(tablero_con_minas):
 
 """
 N: inicializar_tablero_completo
-D: crea y devuelve el tablero logico completo (minas y numeros)
+D: crea y devuelve el tablero lógico completo (minas y numeros)
 E: n, cantidad de minas
 S: matriz n x n lista para jugar
 R: total_minas debe ser menor a n*n
@@ -198,3 +198,86 @@ def colocar_bandera(tablero_visible, fila, columna):
         tablero_visible[fila][columna] = 0      # quitar bandera
     
     return tablero_visible[fila][columna]
+
+"""
+N: contar_minas_restantes
+D: calcula minas totales menos banderas colocadas
+E: tablero_visible, total_minas
+S: minas restantes
+R: ninguna
+"""
+def contar_minas_restantes(tablero_visible, total_minas):
+    banderas = 0
+    tamaño = len(tablero_visible)
+    for i in range(tamaño):
+        for j in range(tamaño):
+            if tablero_visible[i][j] == 2:
+                banderas = banderas + 1
+    return total_minas - banderas
+
+
+"""
+N: contar_celdas_reveladas
+D: cuenta cuántas celdas están reveladas (estado 1)
+E: tablero_visible
+S: número de celdas reveladas
+R: ninguna
+"""
+def contar_celdas_reveladas(tablero_visible):
+    reveladas = 0
+    tamaño = len(tablero_visible)
+    for i in range(tamaño):
+        for j in range(tamaño):
+            if tablero_visible[i][j] == 1:
+                reveladas = reveladas + 1
+    return reveladas
+
+
+"""
+N: contar_banderas_colocadas
+D: cuenta cuantas banderas hay en el tablero
+E: tablero_visible
+S: número de banderas
+R: ninguna
+"""
+def contar_banderas_colocadas(tablero_visible):
+    banderas = 0
+    tamaño = len(tablero_visible)
+    for i in range(tamaño):
+        for j in range(tamaño):
+            if tablero_visible[i][j] == 2:
+                banderas = banderas + 1
+    return banderas
+
+"""
+N: verificar_victoria
+D: verifica si el jugador ha ganado (todas las celdas que no son mina están reveladas)
+E: tablero_logico, tablero_visible 
+S: True si ganó, False si no
+R: ninguna
+"""
+def verificar_victoria(tablero_logico, tablero_visible):
+    tamaño = len(tablero_logico)
+    for i in range(tamaño):
+        for j in range(tamaño):
+            # si no es mina y no está revelada, todavía no ganó
+            if tablero_logico[i][j] != -1:
+                if tablero_visible[i][j] != 1:
+                    return False
+    return True
+
+
+"""
+N: mostrar_todas_minas
+D: revela todas las minas del tablero (cuando el jugador pierde)
+E: tablero_logico, tablero_visible
+S: None (modifica tablero_visible)
+R: ninguna
+"""
+def mostrar_todas_minas(tablero_logico, tablero_visible):
+    tamaño = len(tablero_logico)
+    for i in range(tamaño):
+        for j in range(tamaño):
+            if tablero_logico[i][j] == -1:
+                tablero_visible[i][j] = 1
+
