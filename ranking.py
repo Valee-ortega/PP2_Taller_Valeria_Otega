@@ -33,7 +33,6 @@ def guardar_partida(nombre, dificultad, tiempo, reveladas, movimientos):
         # crear la línea con los datos separados por comas
         linea = f"{nombre},{dificultad},{tiempo},{reveladas},{movimientos}\n"
         
-        # escribir la línea en el archivo
         archivo.write(linea)
         
         # cerrar el archivo, para guardar los cambios
@@ -96,4 +95,75 @@ def cargar_todas_partidas():
         pass
 
     return partidas
+
+"""
+N: encontrar_menor
+D: encuentra la partida con el menor tiempo en una lista
+E: lista de partidas (cada partida es una tupla)
+S: la partida con el menor tiempo
+R: la lista no debe estar vacía 
+"""
+def encontrar_menor(lista):
+    menor = lista[0]
+    for partida in lista:
+        if partida[2] < menor[2]:
+            menor = partida
+    return menor
+
+"""
+N: eliminar
+D: elimina un elemento especifico de una lista
+E: lista original, elemento a eliminar
+S: nueva lista sin el elemento eliminado
+R: ninguna
+"""
+
+def eliminar(lista, elemento):
+    nueva = [ ]
+    for x in lista:
+        if x != elemento:
+            nueva.append(x)
+    return nueva
+
+"""
+N: obtener_top_10
+D: obtiene las 10 mejores partidas de una dificultad
+E: dificultad: "Facil", "Medio" o "Dificil"
+S: lista con las 10 mejores partidas
+R: ninguna
+"""
+
+def obtener_top_10(dificultad):
+
+    # cargar y filtrar  segfun la dificultad 
+    todas = cargar_todas_partidas()
+    filtradas = [ ]
+    for partida in todas:
+        if partida[1] == dificultad:
+            filtradas.append(partida)
+
+    top_10 = [ ] # lista para guardar el top
+
+    # para hacer una copia de la lista
+    restantes = filtradas[:] # sin inicio ni fin para que copie todo 
+
+    while len(top_10) <= 10 and len(restantes) > 0:
+
+        # agregar la de menor tiempo
+        menor = encontrar_menor(restantes) 
+        top_10.append(menor) 
+        
+        # eliminarla de la lista, para volver a evaluar y seguir sacando los otros menores
+        restantes = eliminar(restantes, menor)
+
+    return top_10
+
+
+
+
+
+
+
+
+
 
