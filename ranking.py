@@ -135,6 +135,10 @@ R: ninguna
 
 def obtener_top_10(dificultad):
 
+    # validar que la dificultad sea correcta
+    if dificultad not in ["Facil", "Medio", "Dificil"]:
+        return []
+
     # cargar y filtrar  segfun la dificultad 
     todas = cargar_todas_partidas()
     filtradas = [ ]
@@ -147,7 +151,7 @@ def obtener_top_10(dificultad):
     # para hacer una copia de la lista
     restantes = filtradas[:] # sin inicio ni fin para que copie todo 
 
-    while len(top_10) <= 10 and len(restantes) > 0:
+    while len(top_10) < 10 and len(restantes) > 0:
 
         # agregar la de menor tiempo
         menor = encontrar_menor(restantes) 
