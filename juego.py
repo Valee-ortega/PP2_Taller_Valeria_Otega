@@ -8,7 +8,7 @@ S: matriz de n x n con todos los elementos en 0
 R: n debe ser mayor a 0
 """
 def crear_matriz_vacia(n):
-    if n == 0:
+    if n <= 0:
         return 'El número no puede ser cero'
     else:
         matriz= []
@@ -41,12 +41,12 @@ def colocar_minas(matriz, cantidad_minas):
     return matriz
 
 """
-    N: calcular_vecinos
-    D: calcula cuántas minas hay alrededor de cada celda
-    E: matriz con minas y ceros
-    S: misma matriz donde los ceros se convierten en números 1..8
-    R: las minas ya deben estar colocadas (-1)
-    """
+N: calcular_vecinos
+D: calcula cuántas minas hay alrededor de cada celda
+E: matriz con minas y ceros
+S: misma matriz donde los ceros se convierten en números 1..8
+R: las minas ya deben estar colocadas (-1)
+"""
 
 def calcular_vecinos(tablero_con_minas):
     
