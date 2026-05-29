@@ -48,7 +48,7 @@ def guardar_partida(nombre, dificultad, tiempo, reveladas, movimientos):
 """
 N: cargar_todas_partidas
 D: carga todas las partidas guardadas en el archivo ranking.txt
-E: None
+E: ninguna
 S: lista de tuplas (nombre, dificultad, tiempo, reveladas, movimientos)
 R: si el archivo no existe, devuelve lista vacía
 """
@@ -100,6 +100,7 @@ def cargar_todas_partidas():
 N: encontrar_menor
 D: encuentra la partida con el menor tiempo en una lista
 E: lista de partidas (cada partida es una tupla)
+   (nombre, dificultad, tiempo, reveladas, movimientos)
 S: la partida con el menor tiempo
 R: la lista no debe estar vacía 
 """
@@ -119,7 +120,7 @@ R: ninguna
 """
 
 def eliminar(lista, elemento):
-    nueva = [ ]
+    nueva = []
     for x in lista:
         if x != elemento:
             nueva.append(x)
@@ -163,11 +164,47 @@ def obtener_top_10(dificultad):
     return top_10
 
 
+"""
+N: es_mejor_tiempo
+D: verifica si un tiempo está dentro del top 10 de una dificultad
+E: dificultad, tiempo
+S: True si el tiempo es mejor que el peor del top 10 (o si hay menos de 10)
+R: tiempo debe ser mayor a 0
+"""
+def es_mejor_tiempo(dificultad, tiempo):
+    
+    if tiempo <= 0:
+        return False
+    
+    top_10 = obtener_top_10(dificultad)
+    
+    # si hay menos de 10, cualquier tiempo entra
+    if len(top_10) < 10:
+        return True
+    
+    # el peor tiempo es el ultimo (indice 9)
+    peor_tiempo = top_10[9][2]  # [9] es la posición 10, [2] es el tiempo
+    return tiempo < peor_tiempo
 
 
-
-
-
-
-
-
+"""
+N: agregar_si_es_record
+D: agrega una partida al ranking SOLO si es mejor que el peor del top 10
+E: nombre, dificultad, tiempo, reveladas, movimientos
+S: True si se agrego, False si no entro al top 10
+R: nombre no puede estar vacio, tiempo debe ser mayor a 0
+"""
+def agregar_si_es_record(nombre, dificultad, tiempo, reveladas, movimientos):
+    
+    # validaciones
+    if nombre == "" or nombre.strip() == "":
+        return False
+    if tiempo <= 0:
+        return False
+    
+    # verificar si debe estar en el ranking
+    if es_mejor_tiempo(dificultad, tiempo):
+        guardar_partida(nombre, dificultad, tiempo, reveladas, movimientos)
+        return True
+    else:
+        return False
