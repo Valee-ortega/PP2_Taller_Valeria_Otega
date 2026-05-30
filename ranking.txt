@@ -1,0 +1,4 @@
+Vale,Facil,120,54,0
+Valeriaa,Facil,126,54,0
+Fernanda,Facil,96,54,0
+Say,Facil,212,54,29
