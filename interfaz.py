@@ -262,11 +262,16 @@ def crear_tablero_botones(frame_tablero, tamaño, tablero_logico, tablero_visibl
         if not vivo: # PERDIÓ
             juego_activo = False
             
+            # mostrar todas las minas primero
+            mostrar_todas_minas(tablero_logico, tablero_visible)
+            actualizar_interfaz()  # actualizar para que se vean las minas
+
+            # calcular estadisticas
             reveladas = contar_celdas_reveladas(tablero_visible)
             banderas = contar_banderas_colocadas(tablero_visible)
 
-            mostrar_estadisticas("", dificultad, modo, tiempo_actual[0], reveladas, banderas, "Perdió")
-            ventana_juego.destroy()
+            ventana_juego.after(1800, lambda: [mostrar_estadisticas("", dificultad, modo, tiempo_actual[0], reveladas, banderas, "Perdió"), ventana_juego.destroy()])
+            
             return
     
         if verificar_victoria(tablero_logico, tablero_visible):
