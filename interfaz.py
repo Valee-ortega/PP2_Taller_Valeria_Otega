@@ -4,6 +4,9 @@ from juego import inicializar_tablero_completo, inicializar_tablero_visible, rev
 from estadisticas import mostrar_estadisticas, pedir_nombre, mostrar_menu_ranking
 from ranking import agregar_si_es_record
 
+# variable global para la ventana principal
+ventana = None 
+
 """
 N: mostrar_ventana_inicial
 D: crea y muestra la ventana principal del juego con 3 botones
@@ -12,8 +15,13 @@ S: ninguna
 R: ninguna
 """
 def mostrar_ventana_inicial():
-    # tk.Tk() crea la ventana principal
-    ventana = tk.Tk()
+    global ventana
+
+    if ventana is None or not ventana.winfo_exists(): # si la ventana no existe o si existe pero fue destruida
+        ventana = tk.Tk()
+    else:
+        ventana.deiconify() # muestra la ventana nuevamente
+        return
     
     # title() pone el texto en la barra de titulo de la ventana
     ventana.title("Buscaminas")
@@ -513,7 +521,8 @@ S: ninguna
 R: ninguna
 """
 def volver_inicio(ventana_juego):
+    global ventana
     ventana_juego.destroy()
-    mostrar_ventana_inicial()
+    ventana.deiconify() # mostrar la ventana prinicpal
 
 mostrar_ventana_inicial()
