@@ -1,7 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox # para mostrar mensajes emergentes (flotantes)
 from juego import inicializar_tablero_completo, inicializar_tablero_visible, revelar_celda, colocar_bandera, verificar_victoria, contar_minas_restantes, contar_celdas_reveladas, contar_banderas_colocadas, mostrar_todas_minas
-
+from estadisticas import mostrar_estadisticas, pedir_nombre, mostrar_menu_ranking
+from ranking import agregar_si_es_record
 
 """
 N: mostrar_ventana_inicial
@@ -37,11 +38,11 @@ def mostrar_ventana_inicial():
     boton_nueva.pack(pady=50)
 
     # boton 2: VER RANKING
-    boton_ranking = tk.Button(ventana,text="Ver Ranking",width=20,height=2 )
+    boton_ranking = tk.Button(ventana,text="Ver Ranking",width=20,height=2, command=lambda: mostrar_menu_ranking(ventana) )
     boton_ranking.pack(pady=50)
      
     # botón 3: SALIR
-    boton_salir = tk.Button(ventana, text="Salir", width=20, height=2 )
+    boton_salir = tk.Button(ventana, text="Salir", width=20, height=2, command=ventana.quit)
     boton_salir.pack(pady=50)
     
     # iniciar la ventana (bucle principal)
@@ -155,12 +156,12 @@ def obtener_configuracion_dificultad(dificultad):
     
 """
 N: crear_frame_superior
-D: crea el frame superior con el contador de minas
-E: ventana_juego, total_minas
-S: tuple (frame, minas_restantes)
+D: crea el frame superior con el contador de minas y el cronómetro
+E: ventana_juego, total_minas, modo de juego
+S: tupla (minas_restantes, lbl_tiempo)
 R: ninguna
 """
-def crear_frame_superior(ventana_juego, total_minas):
+def crear_frame_superior(ventana_juego, total_minas, modo):
     
     # crear frame
     frame_superior = tk.Frame(ventana_juego)
@@ -176,18 +177,31 @@ def crear_frame_superior(ventana_juego, total_minas):
     minas_restantes = tk.StringVar(value=str(total_minas))
     lbl_minas_valor = tk.Label(frame_superior, textvariable=minas_restantes, font=("Arial", 12, "bold"), fg="red")
     lbl_minas_valor.pack(side="left", padx=10)
+
+    # CRONÓMETRO
+    lbl_tiempo_texto = tk.Label(frame_superior, text="Tiempo:", font=("Arial", 12))
+    lbl_tiempo_texto.pack(side="left", padx=20)
     
-    return minas_restantes
+    # color según el modo
+    if modo == "Normal":
+        color_tiempo = "blue"
+    else:
+        color_tiempo = "orange"
+    
+    lbl_tiempo = tk.Label(frame_superior, text="0:00", font=("Arial", 12, "bold"), fg=color_tiempo)
+    lbl_tiempo.pack(side="left", padx=10)
+    
+    return minas_restantes, lbl_tiempo
 
 
 """
 N: crear_frame_inferior
 D: crea el frame inferior con los botones de control
-E: ventana_juego, dificultad, modo
+E: ventana_juego, dificultad, modo, tiempo actual
 S: niguna
 R: ninguna
 """
-def crear_frame_inferior(ventana_juego, dificultad, modo):
+def crear_frame_inferior(ventana_juego, dificultad, modo, tiempo_actual):
 
     # crear frame
     frame_inferior = tk.Frame(ventana_juego)
@@ -198,7 +212,7 @@ def crear_frame_inferior(ventana_juego, dificultad, modo):
     boton_reiniciar.pack(side="left", padx=10)
     
     # botón ABANDONAR
-    boton_abandonar = tk.Button(frame_inferior, text="Abandonar", width=10, command=lambda: abandonar_partida(ventana_juego, dificultad, modo))
+    boton_abandonar = tk.Button(frame_inferior, text="Abandonar", width=10, command=lambda: abandonar_partida(ventana_juego, dificultad, modo, tiempo_actual))
     boton_abandonar.pack(side="left", padx=10)
     
     # botón VOLVER AL INICIO
@@ -209,49 +223,82 @@ def crear_frame_inferior(ventana_juego, dificultad, modo):
 """
 N: crear_tablero_botones
 D: crea la matriz de botones y asigna los eventos
-E: frame_tablero, tamaño, tablero_logico, tablero_visible, juego_activo, primer_clic, actualizar_contador_minas
-S: lista de botones creados
+E: frame_tablero, tamaño, tablero_logico, tablero_visible, juego_activo, primer_clic, actualizar_contador_minas, inciar_cronometro, ventana_juego, dificultad, modo, tiempo_actual, contador_movimientos
+S: lista de botones creados 
 R: ninguna
 """
-def crear_tablero_botones(frame_tablero, tamaño, tablero_logico, tablero_visible, juego_activo, primer_clic, actualizar_contador_minas):
+def crear_tablero_botones(frame_tablero, tamaño, tablero_logico, tablero_visible, juego_activo, primer_clic, actualizar_contador_minas, iniciar_cronometro, ventana_juego, dificultad, modo,  tiempo_actual, contador_movimientos):
     
     botones = []
     
     # funcion para manejar clic izquierdo (revelar)
     def clic_izquierdo(fila, columna):
-        nonlocal juego_activo, primer_clic # nonlocal porque pertenecen a la funcion exterior
+        nonlocal juego_activo, primer_clic, contador_movimientos # nonlocal porque pertenecen a la funcion exterior
         
+        contador_movimientos += 1 # contar moviminetos
+
         if not juego_activo:
             return
         
         if tablero_visible[fila][columna] != 0: # si no esta oculta
             return
         
+        # PRIMER CLIC: iniciar cronometro
+        if primer_clic:
+            primer_clic = False
+            iniciar_cronometro()
+        
         vivo = revelar_celda(tablero_logico, tablero_visible, fila, columna)
         actualizar_interfaz()
         
-        if not vivo:
+        if not vivo: # PERDIÓ
             juego_activo = False
-            mostrar_todas_minas(tablero_logico, tablero_visible)
-            actualizar_interfaz()
-            messagebox.showinfo("Game Over", "¡Has perdido! 💣")
+            
+            reveladas = contar_celdas_reveladas(tablero_visible)
+            banderas = contar_banderas_colocadas(tablero_visible)
+
+            mostrar_estadisticas("", dificultad, modo, tiempo_actual[0], reveladas, banderas, "Perdió")
+            ventana_juego.destroy()
             return
-        
+    
         if verificar_victoria(tablero_logico, tablero_visible):
             juego_activo = False
-            messagebox.showinfo("Victoria", "¡Has ganado! 🎉")
+            
+            # calcular estadisticas para victoria
+            reveladas = contar_celdas_reveladas(tablero_visible)
+            banderas = contar_banderas_colocadas(tablero_visible)
+            
+
+            # pedir nomnre
+            nombre = pedir_nombre(ventana_juego)
+
+            es_record = agregar_si_es_record(nombre, dificultad, tiempo_actual[0], reveladas, contador_movimientos)
+
+            # mostrar estadisticas
+
+            mostrar_estadisticas(nombre, dificultad, modo, tiempo_actual[0], reveladas, banderas, "Ganó")
+            
+             # mostrar mensaje si es récord
+            if es_record:
+                messagebox.showinfo("¡Récord!", f"¡{nombre} has entrado al top 10 de {dificultad}!")
+            
+            ventana_juego.destroy()
             return
+        
         
         actualizar_contador_minas()
     
     # funcion para manejar clic derecho (bandera)
     def clic_derecho(fila, columna):
-        nonlocal juego_activo
+        nonlocal juego_activo, contador_movimientos
         
         if not juego_activo:
             return
         
         if tablero_visible[fila][columna] == 0 or tablero_visible[fila][columna] == 2:
+            
+            contador_movimientos += 1 # contar movimikento
+
             colocar_bandera(tablero_visible, fila, columna)
             actualizar_interfaz()
             actualizar_contador_minas()
@@ -273,9 +320,24 @@ def crear_tablero_botones(frame_tablero, tamaño, tablero_logico, tablero_visibl
                     elif valor == 0:  # vacío
                         botones[fila][columna].config(text="", relief="sunken", bg="white")
                     else:  # número
-                        colores = {1: "blue", 2: "green", 3: "red", 4: "purple", 
-                                   5: "maroon", 6: "turquoise", 7: "black", 8: "gray"}
-                        color = colores.get(valor, "black")
+                        if valor == 1:
+                            color = "blue"
+                        elif valor == 2:
+                            color = "green"
+                        elif valor == 3:
+                            color = "red"
+                        elif valor == 4:
+                            color = "purple"
+                        elif valor == 5:
+                            color = "maroon"
+                        elif valor == 6:
+                            color = "turquoise"
+                        elif valor == 7:
+                            color = "black"
+                        elif valor == 8:
+                            color = "gray"
+                        else:
+                            color = "black"
                         botones[fila][columna].config(text=str(valor), relief="sunken", bg="white", fg=color)
     
     # crear los botones
@@ -305,14 +367,19 @@ def mostrar_ventana_juego(dificultad, modo):
     
     # obtener configuracion segun dificultad
     tamaño, total_minas = obtener_configuracion_dificultad(dificultad)
-    
+
     # inicializar tableros lógicos
     tablero_logico = inicializar_tablero_completo(tamaño, total_minas)
     tablero_visible = inicializar_tablero_visible(tamaño)
     
     # variables de estado del juego
     juego_activo = True
-    primer_clic = True
+    primer_clic = True # inicaiar cronometro con el primer clic
+    cronometro_activo = False   # si el cronómetro está corriendo
+    contador_movimientos = 0   # contar los movimkientos
+
+    # LISTA MUTABLE PARA EL TIEMPO (se puede modificar desde cualquier funcion)
+    tiempo_actual = [0]  # [0] es el valor, se usa como tiempo_actual[0]
     
     # crear la ventana
     ventana_juego = tk.Toplevel()
@@ -323,22 +390,93 @@ def mostrar_ventana_juego(dificultad, modo):
     ventana_juego.resizable(False, False)
     
     # crear frame superior
-    minas_restantes = crear_frame_superior(ventana_juego, total_minas)
+    minas_restantes, lbl_tiempo = crear_frame_superior(ventana_juego, total_minas, modo)
+
+    #-------------------------
+    # FUNCIONES DEL CRONOMETRO
+
+    # funcion para formatear tiempol(segundos a MM:SS)
+    def formatear_tiempo(segundos):
+        minutos = segundos // 60
+        segs = segundos % 60
+        if segs < 10:
+            return f"{minutos}:{segs:02d}"
+        return f"{minutos}:{segs}"
+    
+    # funcion para actualizar el cronometro
+    def actualizar_cronometro():
+        nonlocal cronometro_activo, juego_activo
+        
+        if not cronometro_activo:
+            return
+        
+        if not juego_activo:
+            cronometro_activo = False # detener el cronometro
+            return
+        
+        if modo == "Normal":
+            tiempo_actual[0] = tiempo_actual[0] + 1
+            lbl_tiempo.config(text=formatear_tiempo(tiempo_actual[0]))
+            # programar proxima actualización (1000 ms = 1 segundo)
+            ventana_juego.after(1000, actualizar_cronometro)
+        
+        else:
+            # modo contrarreloj: resta segundos
+            tiempo_actual[0]= tiempo_actual[0] - 1
+            lbl_tiempo.config(text=formatear_tiempo(tiempo_actual[0]))
+            
+            # si el tiempo llega a 0, el jugador pierde
+            if tiempo_actual[0] <= 0:
+                juego_activo = False
+                cronometro_activo = False
+                mostrar_todas_minas(tablero_logico, tablero_visible)
+                
+                from estadisticas import mostrar_estadisticas
+                reveladas = contar_celdas_reveladas(tablero_visible)
+                banderas = contar_banderas_colocadas(tablero_visible)
+                mostrar_estadisticas("", dificultad, modo, 0, reveladas, banderas, "Perdió")
+                
+                ventana_juego.destroy()
+                return
+            
+            
+            # programar proxima actualización
+            ventana_juego.after(1000, actualizar_cronometro)
+
+    # funcion para iniciar el cronometro 
+    def iniciar_cronometro():
+        nonlocal cronometro_activo, tiempo_actual
+        
+        if not cronometro_activo:
+            cronometro_activo = True
+            
+            if modo == "Normal":
+                tiempo_actual[0]= 0
+            else:  # Contrarreloj
+                if dificultad == "Facil":
+                    tiempo_actual[0] = 180
+                elif dificultad == "Medio":
+                    tiempo_actual[0] = 480
+                else:
+                    tiempo_actual[0] = 900
+            
+            lbl_tiempo.config(text=formatear_tiempo(tiempo_actual[0]))
+            actualizar_cronometro()
     
     # crear frame del tablero
     frame_tablero = tk.Frame(ventana_juego)
     frame_tablero.pack()
-    
+
+
     # funcion para actualizar el contador de minas
     def actualizar_contador_minas():
         restantes = contar_minas_restantes(tablero_visible, total_minas)
         minas_restantes.set(str(restantes))
+
+    crear_tablero_botones(frame_tablero, tamaño, tablero_logico, tablero_visible, juego_activo, primer_clic, actualizar_contador_minas, iniciar_cronometro, ventana_juego, dificultad, modo, tiempo_actual, contador_movimientos)
     
-    # crear los botones del tablero
-    crear_tablero_botones(frame_tablero, tamaño, tablero_logico, tablero_visible, juego_activo, primer_clic, actualizar_contador_minas)
-    
-    # crear frame inferior (botones de abajo del tablero )
-    crear_frame_inferior(ventana_juego, dificultad, modo)
+    # crear frame inferior
+    crear_frame_inferior(ventana_juego, dificultad, modo, tiempo_actual)
     
 #--------------------------------------
 # funciones auxiliares para los botones
@@ -357,19 +495,20 @@ def reiniciar_partida(ventana_juego, dificultad, modo):
 """
 N: abandonar_partida
 D: cierra la ventana del juego y muestra estadísticas de abandono
-E: ventana_juego, dificultad, mod
+E: ventana_juego, dificultad, modo, tiempo_actual
 S: ninguna
 R: ninguna
 """
-def abandonar_partida(ventana_juego, dificultad, modo):
-    ventana_juego.destroy()
-    messagebox.showinfo("Partida abandonada", f"Has abandonado la partida\nDificultad: {dificultad}\nModo: {modo}")
 
+def abandonar_partida(ventana_juego, dificultad, modo, tiempo_actual):
+    mostrar_estadisticas("", dificultad, modo, tiempo_actual[0], 0, 0, "Abandonó")
+    ventana_juego.destroy()
+   
 
 """
 N: volver_inicio
 D: cierra la ventana del juego y vuelve a la ventana inicial
-E: ventana_jueg
+E: ventana_juego
 S: ninguna
 R: ninguna
 """
